@@ -1,0 +1,71 @@
+name: Android APK Build & Release
+
+on:
+  push:
+    branches:
+      - main
+      - master
+  workflow_dispatch:
+
+jobs:
+  build:
+    name: Build Debug APK
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Cache Gradle packages
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.gradle/caches
+            ~/.gradle/wrapper
+          key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle*', '**/gradle-wrapper.properties') }}
+          restore-keys: |
+            ${{ runner.os }}-gradle-
+
+      - name: Build debug APK (assembleDebug)
+        # Use gradle/gradle-build-action to ensure Gradle is available.
+        uses: gradle/gradle-build-action@v2
+        with:
+          gradle-version: '8.2'
+          arguments: 'assembleDebug'
+
+      - name: Locate APK
+        id: find_apk
+        run: |
+          echo "Searching for APK..."
+          ls -R app/build/outputs/apk || true
+          APK_DEBUG=$(find app/build/outputs/apk -type f -name "*-debug.apk" | head -n 1 || true)
+          if [ -z "$APK_DEBUG" ]; then
+            echo "No debug APK found" >&2
+            exit 1
+          fi
+          echo "apk_path=$APK_DEBUG" >> $GITHUB_OUTPUT
+
+      - name: Create GitHub Release
+        id: create_release
+        uses: actions/create-release@v1
+        with:
+          tag_name: apk-build-${{ github.run_number }}-${{ github.run_id }}
+          release_name: APK build ${{ github.run_number }}
+          body: Automated debug APK build from commit `${{ github.sha }}`
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Upload APK to Release
+        uses: actions/upload-release-asset@v2
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: ${{ steps.find_apk.outputs.apk_path }}
+          asset_name: app-debug.apk
+          asset_content_type: application/vnd.android.package-archive
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
