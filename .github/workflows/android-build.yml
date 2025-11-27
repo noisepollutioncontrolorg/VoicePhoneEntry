@@ -11,6 +11,7 @@ jobs:
   build:
     name: Build Debug APK
     runs-on: ubuntu-latest
+
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -20,6 +21,14 @@ jobs:
         with:
           distribution: temurin
           java-version: '17'
+
+      # 🔹 Android SDK install ചെയ്യുന്നത്
+      - name: Set up Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Install Android SDK platforms and build-tools
+        run: |
+          sdkmanager --install "platforms;android-34" "build-tools;34.0.0" "platform-tools"
 
       - name: Cache Gradle packages
         uses: actions/cache@v4
