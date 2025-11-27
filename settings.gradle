@@ -1,6 +1,4 @@
-rootProject.name = "VoicePhoneEntry"
-include ':app'
-// settings.gradle (replace or add at top)
+// settings.gradle - pluginManagement MUST be the very first block
 pluginManagement {
     repositories {
         gradlePluginPortal()
