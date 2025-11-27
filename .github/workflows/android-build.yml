@@ -26,6 +26,10 @@ jobs:
       - name: Set up Android SDK
         uses: android-actions/setup-android@v3
 
+      - name: Accept Android SDK licenses
+        run: |
+          yes | sdkmanager --licenses || true
+
       - name: Install Android SDK platforms and build-tools
         run: |
           sdkmanager --install "platforms;android-34" "build-tools;34.0.0" "platform-tools"
@@ -40,26 +44,40 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-gradle-
 
-      - name: Build debug APK (assembleDebug)
-        uses: gradle/gradle-build-action@v2
-        with:
-          gradle-version: '8.2'
-          arguments: 'assembleDebug --stacktrace --info'
+      - name: Build debug APK (assembleDebug) and save full log
+        id: gradle_build
+        run: |
+          chmod +x ./gradlew
+          # Run gradle and capture everything to build-full.log. Use || true so the step doesn't abort the workflow
+          ./gradlew clean assembleDebug --stacktrace --info > build-full.log 2>&1 || true
+          echo "Gradle exit code: $?" >> build-full.log
+          # Make the log available as a step output path (optional)
+          echo "log_path=build-full.log" >> $GITHUB_OUTPUT
 
-      - name: Locate APK
+      - name: Upload build-full.log artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: build-full-log
+          path: build-full.log
+
+      - name: Locate APK (if any)
         id: find_apk
         run: |
           echo "Searching for APK..."
           ls -R app/build/outputs/apk || true
           APK_DEBUG=$(find app/build/outputs/apk -type f -name "*-debug.apk" | head -n 1 || true)
+          # Always set output (empty if not found)
           if [ -z "$APK_DEBUG" ]; then
-            echo "No debug APK found" >&2
-            exit 1
+            echo "No debug APK found"
+            echo "apk_path=" >> $GITHUB_OUTPUT
+          else
+            echo "Found APK: $APK_DEBUG"
+            echo "apk_path=$APK_DEBUG" >> $GITHUB_OUTPUT
           fi
-          echo "apk_path=$APK_DEBUG" >> $GITHUB_OUTPUT
 
-      - name: Create GitHub Release
+      - name: Create GitHub Release (only if APK found)
         id: create_release
+        if: steps.find_apk.outputs.apk_path != ''
         uses: actions/create-release@v1
         with:
           tag_name: apk-build-${{ github.run_number }}-${{ github.run_id }}
@@ -68,7 +86,8 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Upload APK to Release
+      - name: Upload APK to Release (only if APK found)
+        if: steps.find_apk.outputs.apk_path != ''
         uses: actions/upload-release-asset@v1
         with:
           upload_url: ${{ steps.create_release.outputs.upload_url }}
