@@ -32,11 +32,10 @@ jobs:
             ${{ runner.os }}-gradle-
 
       - name: Build debug APK (assembleDebug)
-        # Use gradle/gradle-build-action to ensure Gradle is available.
         uses: gradle/gradle-build-action@v2
         with:
           gradle-version: '8.2'
-          arguments: 'assembleDebug'
+          arguments: 'assembleDebug --stacktrace --info'
 
       - name: Locate APK
         id: find_apk
