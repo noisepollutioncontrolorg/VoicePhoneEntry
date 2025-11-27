@@ -1,0 +1,2 @@
+rootProject.name = "VoicePhoneEntry"
+include ':app'
