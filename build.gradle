@@ -1,11 +1,14 @@
-// build.gradle (project)
+// build.gradle (project-level) - replace entire file with this
+
 buildscript {
     repositories {
         google()
         mavenCentral()
     }
     dependencies {
+        // Android Gradle Plugin
         classpath "com.android.tools.build:gradle:8.2.0"
+        // Kotlin Gradle Plugin
         classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:1.9.10"
     }
 }
@@ -15,4 +18,8 @@ allprojects {
         google()
         mavenCentral()
     }
+}
+
+task clean(type: Delete) {
+    delete rootProject.buildDir
 }
