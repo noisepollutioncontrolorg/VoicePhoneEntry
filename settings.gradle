@@ -1,2 +1,21 @@
 rootProject.name = "VoicePhoneEntry"
 include ':app'
+// settings.gradle (replace or add at top)
+pluginManagement {
+    repositories {
+        gradlePluginPortal()
+        google()
+        mavenCentral()
+    }
+}
+
+dependencyResolutionManagement {
+    repositoriesMode.set(RepositoriesMode.FAIL_ON_PROJECT_REPOS)
+    repositories {
+        google()
+        mavenCentral()
+    }
+}
+
+rootProject.name = "VoicePhoneEntry"
+include ':app'
